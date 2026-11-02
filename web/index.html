@@ -1,0 +1,306 @@
+
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HabitFlow — Habits & daily to-dos</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>" />
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">
+         <img src="/assets/images/logo.svg" alt="">
+      </div>
+      <div>
+        <h1> Mice Note </h1>
+        <p class="sub" id="todayLabel">…</p>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="language-switcher">
+    <span class="language-icon">🌐</span>
+
+    <select id="languageSelect" aria-label="Select language">
+      <option value="en">English</option>
+      <option value="ta">தமிழ்</option>
+      <option value="ml">മലയാളം</option>
+      <option value="kn">ಕನ್ನಡ</option>
+      <option value="hi">हिन्दी</option>
+    </select>
+  </div>
+
+      <button class="btn-60" id="btnAdd" type="button">
+    <span>+ New habit</span>
+</button>
+    </div>
+
+     <div class="pill" id="summaryPill" hidden></div>
+  </header>
+
+  <main>
+
+    <p id="loading" class="loading">Loading habits…</p>
+
+    <!-- Main habit cards -->
+    <section
+      id="habitList"
+      class="habit-list"
+      aria-live="polite">
+    </section>
+
+    <div id="emptyState" class="empty" hidden>
+      <div class="empty-art"></div>
+      <h2>No habits yet</h2>
+      <p>
+        Small actions, every day.<br />
+      </p>
+      <button class="btn primary" id="btnAddEmpty">
+        ＋ Create your first habit
+      </button>
+    </div>
+
+  </main>
+
+
+  <!-- NEW / EDIT HABIT MODAL -->
+
+  <dialog id="habitDialog" class="modal">
+    <form id="habitForm" novalidate>
+
+      <h2 id="dlgTitle">New habit</h2>
+
+      <label class="field">
+        <span>Name</span>
+        <input
+          id="inName"
+          name="name"
+          type="text"
+          maxlength="80"
+          placeholder="e.g. Read 20 pages"
+          autocomplete="off"
+        />
+      </label>
+
+      <label class="field">
+        <span>Description <em>(optional)</em></span>
+        <textarea
+          id="inDesc"
+          name="description"
+          rows="2"
+          maxlength="300"
+          placeholder="Why does this matter?">
+        </textarea>
+      </label>
+
+      <div class="field">
+        <span>Color</span>
+        <div class="swatches" id="swatches"></div>
+
+        <label class="custom-color">
+          <input type="color" id="customColor" />
+          Custom…
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="btnCancel">
+          Cancel
+        </button>
+
+        <button type="submit" class="btn primary" id="btnSave">
+          Save habit
+        </button>
+      </div>
+
+    </form>
+  </dialog>
+
+
+  <!-- DELETE CONFIRMATION -->
+
+  <dialog id="confirmDialog" class="modal small">
+
+    <h2>Delete habit?</h2>
+
+    <p id="confirmText" class="confirm-text"></p>
+
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" id="btnNo">
+        Keep it
+      </button>
+
+      <button type="button" class="btn danger" id="btnYes">
+        Delete
+      </button>
+    </div>
+
+  </dialog>
+
+
+  <!-- HABIT ANALYTICS MODAL -->
+
+  <dialog id="habitAnalyticsDialog" class="modal analytics-modal">
+
+    <div class="analytics-header">
+
+      <div>
+        <p class="analytics-label">HABIT ANALYTICS</p>
+        <h2 id="analyticsTitle"> Reading</h2>
+        <p id="analyticsDescription" class="sub">
+          Your personal progress
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="analytics-close"
+        id="analyticsClose"
+        aria-label="Close analytics">
+        ✕
+      </button>
+
+    </div>
+
+
+    <!-- DATE NAVIGATION -->
+
+    <div class="analytics-month-nav">
+
+      <button type="button" id="analyticsPrev" class="btn ghost">
+        ←
+      </button>
+
+      <h3 id="analyticsMonth">November 2026</h3>
+
+      <button type="button" id="analyticsNext" class="btn ghost" aria-label="Next period"></button>>
+        →
+      </button>
+
+    </div>
+
+
+    <!-- STATISTICS -->
+
+    <section class="analytics-stats">
+
+      <div class="analytics-stat">
+        <span class="stat-icon"></span>
+        <h3 id="analyticsCompleted">0</h3>
+        <p>Completed days</p>
+      </div>
+
+      <div class="analytics-stat">
+        <span class="stat-icon"></span>
+        <h3 id="analyticsPercentage">0%</h3>
+        <p>Completion rate</p>
+      </div>
+
+      <div class="analytics-stat">
+        <span class="stat-icon"></span>
+        <h3 id="analyticsStreak">0</h3>
+        <p>Longest streak</p>
+      </div>
+
+    </section>
+
+
+    <!-- MONTHLY HEATMAP -->
+
+    <section class="analytics-section">
+
+      <div class="analytics-section-heading">
+        <div>
+          <h3>Activity heatmap</h3>
+          <p>Track your daily consistency</p>
+        </div>
+      </div>
+
+      <div class="heatmap-weekdays">
+        <span>Mon</span>
+        <span>Tue</span>
+        <span>Wed</span>
+        <span>Thu</span>
+        <span>Fri</span>
+        <span>Sat</span>
+        <span>Sun</span>
+      </div>
+
+      <div
+        id="analyticsHeatmap"
+        class="analytics-heatmap">
+      </div>
+    </section>
+
+
+    <!-- WEEKLY HISTOGRAM -->
+
+    <section class="analytics-section">
+
+      <div class="analytics-section-heading">
+        <div>
+          <h3>Weekly progress</h3>
+          <p>Completed days per week</p>
+        </div>
+      </div>
+
+      <div
+        id="analyticsHeatmap"
+        class="analyticsChart">
+      </div>
+
+    </section>
+
+
+    <!-- MONTHLY SUMMARY -->
+
+    <section class="analytics-section">
+
+      <h3>Monthly summary</h3>
+
+      <div class="monthly-summary">
+
+        <div>
+          <span>Best week</span>
+          <strong id="bestWeek">—</strong>
+        </div>
+
+        <div>
+          <span>Missed days</span>
+          <strong id="missedDays">0</strong>
+        </div>
+
+        <div>
+          <span>Average per week</span>
+          <strong id="weeklyAverage">0</strong>
+        </div>
+
+      </div>
+
+    </section>
+
+  </dialog>
+
+
+  <!-- NOTIFICATIONS -->
+
+  <div
+    id="toasts"
+    class="toasts"
+    aria-live="polite">
+  </div>
+
+  <script src="translations.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
