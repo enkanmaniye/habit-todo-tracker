@@ -1,16 +1,11 @@
-/* HabitFlow frontend logic (vanilla JS, no dependencies) */
 (() => {
   "use strict";
 
-  /* ==========================================
-     CONSTANTS AND STATE
-  ========================================== */
-
   const PALETTE = [
-    "#BA354D", "#B64D70", "#CD7182", 
+    "#BA354D", "#B64D70", "#CD7182",
     "#C66A43", "#C66B56", "#B85C49",
-    "#C09A35", "#D1A943", "#CDB58E", 
-    "#A8BB50", "#788F3F", "#83A68A" 
+    "#C09A35", "#D1A943", "#CDB58E",
+    "#A8BB50", "#788F3F", "#83A68A"
   ];
 
   const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -30,7 +25,7 @@
     );
   }
 
-let futureMessageIndex = 0;
+  let futureMessageIndex = 0;
 
   function getTranslations() {
     return TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
@@ -39,6 +34,7 @@ let futureMessageIndex = 0;
   function t(key) {
     return getTranslations().strings[key] || key;
   }
+
   const esc = (value) =>
     String(value ?? "").replace(/[&<>"']/g, (char) => ({
       "&": "&amp;",
@@ -53,13 +49,7 @@ let futureMessageIndex = 0;
     loading: true
   };
 
-  // Stores the month currently displayed in each habit's mini heatmap.
   const monthSel = new Map();
-
-
-  /* ==========================================
-     DATE HELPERS
-  ========================================== */
 
   const pad = (number) => String(number).padStart(2, "0");
 
@@ -70,7 +60,6 @@ let futureMessageIndex = 0;
 
   const currentYM = () => todayStr().slice(0, 7);
 
-  // Parse YYYY-MM-DD as a local date, avoiding UTC date shifts.
   const parseYMD = (ymd) => {
     const [year, month, day] = ymd.split("-").map(Number);
     return new Date(year, month - 1, day);
@@ -86,16 +75,10 @@ let futureMessageIndex = 0;
       date.getDate()
     );
 
-    // Monday is the first day of the week.
     result.setDate(result.getDate() - ((result.getDay() + 6) % 7));
 
     return result;
   }
-
-
-  /* ==========================================
-     API
-  ========================================== */
 
   async function api(path, { method = "GET", body } = {}) {
     const options = {
@@ -107,6 +90,7 @@ let futureMessageIndex = 0;
       options.headers["Content-Type"] = "application/json";
       options.body = JSON.stringify(body);
     }
+
     const response = await fetch(path, options);
 
     let data = null;
@@ -127,48 +111,23 @@ let futureMessageIndex = 0;
     return data;
   }
 
-
-  /* ==========================================
-     STREAK CALCULATIONS
-  ========================================== */
-
   function currentStreak(done) {
-  const date = new Date();
+    const date = new Date();
 
-  if (!done.has(fmt(date))) {
-    date.setDate(date.getDate() - 1);
-  }
-
-  let streak = 0;
-
-  while (done.has(fmt(date))) {
-    streak++;
-    date.setDate(date.getDate() - 1);
-  }
-
-  return streak;
-}
-
-  /* ==========================================
-     MAIN RENDERING
-  ========================================== */
-/*
-  function updateSummary(doneToday) {
-    const pill = $("#summaryPill");
-
-    if (!pill) return;
-
-    if (state.habits.length === 0) {
-      pill.hidden = true;
-      return;
+    if (!done.has(fmt(date))) {
+      date.setDate(date.getDate() - 1);
     }
 
-    pill.hidden = false;
-    pill.innerHTML =
-      `<b>${doneToday}/${state.habits.length}</b> habits done today`;
+    let streak = 0;
+
+    while (done.has(fmt(date))) {
+      streak++;
+      date.setDate(date.getDate() - 1);
+    }
+
+    return streak;
   }
-      ПОКАЗ ТИПА 3/5 HABITS COMPLETED
-*/
+
   function updateSummary(doneToday) {
     const pill = $("#summaryPill");
 
@@ -193,7 +152,8 @@ let futureMessageIndex = 0;
         ></div>
       </div>
     `;
-}
+  }
+
   function render() {
     const list = $("#habitList");
 
@@ -228,11 +188,6 @@ let futureMessageIndex = 0;
     updateSummary(doneToday);
   }
 
-
-  /* ==========================================
-     HABIT CARD
-  ========================================== */
-
   function habitCard(habit, done) {
     const doneToday = done.has(todayStr());
     const streak = currentStreak(done);
@@ -253,14 +208,11 @@ let futureMessageIndex = 0;
       habit.color || "#d97598"
     );
 
-    // Clicking the card opens analytics.
-    // Buttons inside the card keep their own functionality.
     card.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
       openHabitAnalytics(habit);
     });
 
-    // Keyboard access for the card.
     card.addEventListener("keydown", (event) => {
       if (event.target !== card) return;
 
@@ -341,9 +293,6 @@ let futureMessageIndex = 0;
       </div>
     `;
 
-
-    /* ---------- Complete today ---------- */
-
     const toggleBtn = $(".toggle-btn", card);
 
     toggleBtn.addEventListener("click", async () => {
@@ -356,9 +305,6 @@ let futureMessageIndex = 0;
       }
     });
 
-
-    /* ---------- Edit and delete ---------- */
-
     $(".act-edit", card).addEventListener("click", () => {
       openHabitDialog(habit);
     });
@@ -367,81 +313,86 @@ let futureMessageIndex = 0;
       confirmDelete(habit);
     });
 
-
     const grid = $(".heat-grid", card);
+
     buildHeatmap(grid, null, null, habit, done, ym);
+
     return card;
   }
 
-
-  /* ==========================================
-     MINI HEATMAP INSIDE EACH CARD
-  ========================================== */
-
-  
-function buildHeatmap(grid, title, foot, habit, done, ym) {
+  function buildHeatmap(grid, title, foot, habit, done, ym) {
     if (!grid) return;
 
     grid.replaceChildren();
 
-    // Все привычки нужны для расчёта общей consistency.
     const allHabits = state.habits || [habit];
     const totalHabits = allHabits.length;
 
-    // Считаем количество выполненных привычек для каждой даты.
     const completionCounts = new Map();
 
-    allHabits.forEach(item => {
-        const dates = new Set(item.completions || []);
+    allHabits.forEach((item) => {
+      const dates = new Set(item.completions || []);
 
-        dates.forEach(date => {
-            completionCounts.set(
-                date,
-                (completionCounts.get(date) || 0) + 1
-            );
-        });
+      dates.forEach((date) => {
+        completionCounts.set(
+          date,
+          (completionCounts.get(date) || 0) + 1
+        );
+      });
     });
 
-    // Начало текущей недели (понедельник).
     const today = new Date();
     const currentWeekStart = weekStart(today);
 
-    // Начало предыдущей недели.
-    const previousWeekStart = new Date(currentWeekStart);
-    previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+    const firstDate = new Date(currentWeekStart);
+    firstDate.setDate(firstDate.getDate() - 42);
 
-    // Всего 14 дней: предыдущая неделя + текущая.
-    for (let i = 0; i < 14; i++) {
-        const date = new Date(previousWeekStart);
-        date.setDate(date.getDate() + i);
+    const heat = grid.closest(".heat");
+    const heatTitle = heat?.querySelector(".heat-title");
+    const heatFoot = heat?.querySelector(".heat-foot");
 
-        const dateString = fmt(date);
-        const isFuture = dateString > todayStr();
-        const completedHabits = completionCounts.get(dateString) || 0;
-
-        // Уровень насыщенности от 0 до 4.
-        const level = isFuture || totalHabits === 0
-            ? 0
-            : Math.round((completedHabits / totalHabits) * 4);
-
-        const cell = document.createElement("div");
-
-        cell.className = "consistency-cell";
-        cell.dataset.level = level;
-        cell.title =
-            `$DIL1: $DIL2/$DIL3 habits completed`;
-
-        if (dateString === todayStr()) {
-            cell.classList.add("today");
-        }
-
-        grid.appendChild(cell);
+    if (heatTitle) {
+      heatTitle.textContent = "LAST 7 WEEKS";
     }
-}
 
-  /* ==========================================
-     INDIVIDUAL HABIT ANALYTICS
-  ========================================== */
+    if (heatFoot) {
+      heatFoot.hidden = false;
+
+      const completedDays = new Set(
+        allHabits.flatMap((item) => item.completions || [])
+      ).size;
+
+      heatFoot.textContent = `${completedDays} active days`;
+    }
+
+    for (let i = 0; i < 49; i++) {
+      const date = new Date(firstDate);
+      date.setDate(date.getDate() + i);
+
+      const dateString = fmt(date);
+      const isFuture = dateString > todayStr();
+      const completedHabits = completionCounts.get(dateString) || 0;
+
+      const level =
+        isFuture || totalHabits === 0
+          ? 0
+          : Math.round((completedHabits / totalHabits) * 4);
+
+      const cell = document.createElement("div");
+
+      cell.className = "consistency-cell";
+      cell.dataset.level = level;
+
+      cell.title =
+        `${dateString}: ${completedHabits}/${totalHabits} habits completed`;
+
+      if (dateString === todayStr()) {
+        cell.classList.add("today");
+      }
+
+      grid.appendChild(cell);
+    }
+  }
 
   let analyticsHabit = null;
   let analyticsMode = "month";
@@ -450,8 +401,6 @@ function buildHeatmap(grid, title, foot, habit, done, ym) {
   const analyticsDialog = $("#habitAnalyticsDialog");
 
   function openHabitAnalytics(habit) {
-    // Analytics are optional: the main habit tracker still works
-    // if the analytics dialog has not been added to index.html.
     if (!analyticsDialog) {
       console.error("Analytics dialog is missing from index.html");
       return;
@@ -461,7 +410,7 @@ function buildHeatmap(grid, title, foot, habit, done, ym) {
     analyticsMode = "month";
     analyticsAnchor = new Date();
 
-    $("#analyticsTitle").textContent = ` ${habit.name}`;
+    $("#analyticsTitle").textContent = `${habit.name}`;
 
     $("#analyticsDescription").textContent =
       habit.description || "Your personal activity and consistency";
@@ -480,11 +429,6 @@ function buildHeatmap(grid, title, foot, habit, done, ym) {
     }
   }
 
-
-  /* ==========================================
-     ANALYTICS: MAIN RENDER FUNCTION
-  ========================================== */
-
   function renderHabitAnalytics() {
     if (!analyticsHabit || !analyticsDialog) return;
 
@@ -497,25 +441,17 @@ function buildHeatmap(grid, title, foot, habit, done, ym) {
 
     if (analyticsMode === "week") {
       start = weekStart(analyticsAnchor);
-
       end = new Date(start);
       end.setDate(end.getDate() + 6);
 
-      label =
-        `${start.toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric"
-        })} – ` +
-        `${end.toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric"
-        })}`;
-
-      $("#analyticsChartTitle").textContent = "Daily activity";
-
-      $("#analyticsChartDescription").textContent =
-        "Your completion history for each weekday";
-
+      label = `${start.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric"
+      })} – ${end.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      })}`;
     } else {
       start = new Date(
         analyticsAnchor.getFullYear(),
@@ -529,220 +465,125 @@ function buildHeatmap(grid, title, foot, habit, done, ym) {
         0
       );
 
-      label =
-        `${MONTHS[start.getMonth()]} ${start.getFullYear()}`;
-
-      $("#analyticsChartTitle").textContent = "Weekly activity";
-
-      $("#analyticsChartDescription").textContent =
-        "Number of completed days in each week";
+      label = `${MONTHS[analyticsAnchor.getMonth()]} ${analyticsAnchor.getFullYear()}`;
     }
 
-    $("#analyticsPeriodLabel").textContent = label;
+    const title = $("#analyticsPeriod");
+    if (title) title.textContent = label;
 
+    const prev = $("#analyticsPrev");
+    const next = $("#analyticsNext");
 
-    /* ---------- Completion statistics ---------- */
+    if (prev) prev.disabled = false;
 
-    // Only dates up to today count toward the success rate.
-    const todayDate = parseYMD(today);
+    if (next) {
+      next.disabled =
+        analyticsAnchor.getFullYear() === new Date().getFullYear() &&
+        analyticsAnchor.getMonth() === new Date().getMonth() &&
+        analyticsMode === "month";
+    }
 
-    const effectiveEnd =
-      end < todayDate ? end : todayDate;
-
-    const elapsedDays =
-      effectiveEnd < start
-        ? 0
-        : dayDiff(start, effectiveEnd) + 1;
-
-    const periodDates = [...done].filter((dateString) => {
-      return (
-        dateString >= fmt(start) &&
-        dateString <= fmt(end) &&
-        dateString <= today
-      );
-    });
-
-    const completed = periodDates.length;
-
-    const rate = elapsedDays > 0
-      ? Math.round((completed / elapsedDays) * 100)
+    const totalDays = end.getDate
+      ? dayDiff(start, end) + 1
       : 0;
 
-    $("#analyticsCompleted").textContent = completed;
-    $("#analyticsRate").textContent = `${rate}%`;
+    const completed = [...done].filter((date) => {
+      return date >= fmt(start) && date <= fmt(end) && date <= today;
+    }).length;
 
+    const availableDays = [...Array(totalDays)].filter((_, index) => {
+      const date = new Date(start);
+      date.setDate(date.getDate() + index);
+      return fmt(date) <= today;
+    }).length;
 
-    /* ---------- Navigation limits ---------- */
+    const percentage = availableDays
+      ? Math.round((completed / availableDays) * 100)
+      : 0;
 
-    $("#analyticsNext").disabled = false;
+    const completedEl = $("#analyticsCompleted");
+    const availableEl = $("#analyticsAvailable");
+    const percentEl = $("#analyticsPercentage");
 
-    /* ---------- Heatmap and chart ---------- */
+    if (completedEl) completedEl.textContent = completed;
+    if (availableEl) availableEl.textContent = availableDays;
+    if (percentEl) percentEl.textContent = `${percentage}%`;
 
-    renderAnalyticsHeatmap(start, end, done, today);
-
-    if (analyticsMode === "week") {
-      renderWeeklyChart(start, done, today);
-    } else {
-      renderMonthlyChart(start, end, done, today);
-    }
+    renderAnalyticsHeatmap(start, end, done);
+    renderWeeklyChart(start, end, done);
+    renderMonthlyChart(done);
   }
 
-
-  /* ==========================================
-     ANALYTICS: HEATMAP
-  ========================================== */
-
-  function renderAnalyticsHeatmap(start, end, done, today) {
+  function renderAnalyticsHeatmap(start, end, done) {
     const grid = $("#analyticsHeatmap");
+    if (!grid) return;
 
     grid.replaceChildren();
-  
-    // Weekday headings.
-   const weekdays = getTranslations().weekdays;
 
-  for (const weekday of weekdays) {
-    const heading = document.createElement("div");
+    const firstWeekday = (start.getDay() + 6) % 7;
 
-    heading.className = "analytics-weekday";
-    heading.textContent = weekday;
-
-    grid.appendChild(heading);
-}
-
-    const offset = (start.getDay() + 6) % 7;
-
-    // In month mode, add empty cells before day 1.
-    if (analyticsMode === "month") {
-      for (let i = 0; i < offset; i++) {
-        const blank = document.createElement("div");
-
-        blank.className = "analytics-day blank";
-        grid.appendChild(blank);
-      }
+    for (let i = 0; i < firstWeekday; i++) {
+      const empty = document.createElement("div");
+      empty.className = "analytics-day empty";
+      grid.appendChild(empty);
     }
 
-    const totalDays =
-      analyticsMode === "week"
-        ? 7
-        : end.getDate();
-
-    for (let i = 0; i < totalDays; i++) {
-      const date = new Date(start);
-
-      date.setDate(start.getDate() + i);
-
+    for (let day = 1; day <= end.getDate(); day++) {
+      const date = new Date(start.getFullYear(), start.getMonth(), day);
       const dateString = fmt(date);
+      const cell = document.createElement("button");
 
-      const isDone = done.has(dateString);
-      const isFuture = dateString > today;
-      const isToday = dateString === today;
-
-      const cell = document.createElement("div");
-
+      cell.type = "button";
       cell.className = "analytics-day";
+      cell.textContent = day;
+      cell.dataset.done = done.has(dateString) ? "true" : "false";
 
-      if (isDone) cell.classList.add("done");
-      if (isFuture) cell.classList.add("future");
-      if (isToday) cell.classList.add("today");
+      if (dateString === todayStr()) {
+        cell.classList.add("today");
+      }
 
-      cell.textContent = date.getDate();
+      if (dateString > todayStr()) {
+        cell.disabled = true;
+        cell.classList.add("future");
+      }
 
-      cell.title =
-      `${dateString}: ` +
-      (
-        isDone
-        ? t("completed") + " ✓"
-        : isFuture
-        ? t("upcoming")
-        : t("notCompleted")
-      );
+      if (done.has(dateString)) {
+        cell.classList.add("completed");
+      }
+
+      cell.title = done.has(dateString)
+        ? `${dateString}: completed`
+        : `${dateString}: not completed`;
+
+      cell.addEventListener("click", async () => {
+        await toggleDay(analyticsHabit.id, dateString);
+      });
 
       grid.appendChild(cell);
-  }
-}
-
-  /* ==========================================
-     ANALYTICS: WEEKLY HISTOGRAM
-  ========================================== */
-
-function renderWeeklyChart(start, done, today) {
-  const chart = $("#analyticsChart");
-
-  chart.replaceChildren();
-
-  // Get weekdays in the currently selected language.
-  const weekdays = getTranslations().weekdays;
-
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(start);
-
-    date.setDate(start.getDate() + i);
-
-    const dateString = fmt(date);
-
-    const completed = done.has(dateString);
-    const future = dateString > today;
-
-    const group = document.createElement("div");
-    group.className = "analytics-bar-group";
-
-    const value = document.createElement("span");
-    value.className = "analytics-bar-value";
-    value.textContent =
-      future ? "—" : completed ? "1" : "0";
-
-    const bar = document.createElement("div");
-    bar.className = "analytics-bar";
-
-    // Fixed pixel heights avoid depending on percentage-height
-    // calculations from the parent container.
-    bar.style.height = completed ? "90px" : "3px";
-
-    if (!completed) {
-      bar.style.opacity = future ? "0.2" : "0.35";
     }
-
-    const label = document.createElement("span");
-    label.className = "analytics-bar-label";
-    label.textContent = weekdays[i];
-
-    group.append(value, bar, label);
-    chart.appendChild(group);
   }
-}
 
-  /* ==========================================
-     ANALYTICS: MONTHLY HISTOGRAM
-  ========================================== */
-
-  function renderMonthlyChart(start, end, done, today) {
-    const chart = $("#analyticsChart");
+  function renderWeeklyChart(start, end, done) {
+    const chart = $("#analyticsWeeklyChart");
+    if (!chart) return;
 
     chart.replaceChildren();
 
-    const daysInMonth = end.getDate();
-    const offset = (start.getDay() + 6) % 7;
-
-    const numberOfWeeks =
-      Math.ceil((offset + daysInMonth) / 7);
+    const numberOfWeeks = Math.ceil(
+      (dayDiff(start, end) + 1) / 7
+    );
 
     const counts = Array(numberOfWeeks).fill(0);
     const available = Array(numberOfWeeks).fill(0);
 
-    // Count completed days and elapsed days in each calendar week.
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(
-        start.getFullYear(),
-        start.getMonth(),
-        day
-      );
+    const offset = (start.getDay() + 6) % 7;
 
+    for (let day = 1; day <= end.getDate(); day++) {
+      const date = new Date(start.getFullYear(), start.getMonth(), day);
       const dateString = fmt(date);
+      const weekIndex = Math.floor((offset + day - 1) / 7);
 
-      const weekIndex =
-        Math.floor((offset + day - 1) / 7);
-
-      if (dateString <= today) {
+      if (dateString <= todayStr()) {
         available[weekIndex]++;
 
         if (done.has(dateString)) {
@@ -750,8 +591,6 @@ function renderWeeklyChart(start, done, today) {
         }
       }
     }
-
-    const maxAvailable = Math.max(...available, 1);
 
     for (let i = 0; i < numberOfWeeks; i++) {
       const group = document.createElement("div");
@@ -765,8 +604,8 @@ function renderWeeklyChart(start, done, today) {
       bar.className = "analytics-bar";
 
       const height = available[i] > 0
-      ? (counts[i] / available[i]) * 90
-      : 0;
+        ? (counts[i] / available[i]) * 90
+        : 0;
 
       bar.style.height = `${Math.max(height, 3)}px`;
 
@@ -783,13 +622,69 @@ function renderWeeklyChart(start, done, today) {
     }
   }
 
-  /* ==========================================
-     ANALYTICS: EVENT LISTENERS
-  ========================================== */
+  function renderMonthlyChart(done) {
+    const chart = $("#analyticsMonthlyChart");
+    if (!chart) return;
+
+    chart.replaceChildren();
+
+    const year = analyticsAnchor.getFullYear();
+    const currentMonth = analyticsAnchor.getMonth();
+
+    for (let month = 0; month < 12; month++) {
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 0);
+
+      let available = 0;
+      let completed = 0;
+
+      for (let day = 1; day <= end.getDate(); day++) {
+        const date = new Date(year, month, day);
+        const dateString = fmt(date);
+
+        if (dateString <= todayStr()) {
+          available++;
+
+          if (done.has(dateString)) {
+            completed++;
+          }
+        }
+      }
+
+      const group = document.createElement("div");
+      group.className = "analytics-bar-group";
+
+      const value = document.createElement("span");
+      value.className = "analytics-bar-value";
+      value.textContent = `${completed}/${available}`;
+
+      const bar = document.createElement("div");
+      bar.className = "analytics-bar";
+
+      const height = available > 0
+        ? (completed / available) * 90
+        : 0;
+
+      bar.style.height = `${Math.max(height, 3)}px`;
+
+      if (available === 0) {
+        bar.style.opacity = "0.2";
+      }
+
+      if (month === currentMonth && year === new Date().getFullYear()) {
+        group.classList.add("current");
+      }
+
+      const label = document.createElement("span");
+      label.className = "analytics-bar-label";
+      label.textContent = MONTHS[month].slice(0, 3);
+
+      group.append(value, bar, label);
+      chart.appendChild(group);
+    }
+  }
 
   if (analyticsDialog) {
-
-    // Switch between weekly and monthly analytics.
     document.querySelectorAll(".analytics-tab").forEach((button) => {
       button.addEventListener("click", () => {
         analyticsMode = button.dataset.period;
@@ -799,13 +694,10 @@ function renderWeeklyChart(start, done, today) {
         });
 
         analyticsAnchor = new Date();
-
         renderHabitAnalytics();
       });
     });
 
-
-    // Previous week or month.
     $("#analyticsPrev").addEventListener("click", () => {
       if (analyticsMode === "week") {
         analyticsAnchor.setDate(
@@ -821,8 +713,6 @@ function renderWeeklyChart(start, done, today) {
       renderHabitAnalytics();
     });
 
-
-    // Next week or month.
     $("#analyticsNext").addEventListener("click", () => {
       if ($("#analyticsNext").disabled) return;
 
@@ -840,32 +730,25 @@ function renderWeeklyChart(start, done, today) {
       renderHabitAnalytics();
     });
 
-
-    // Close analytics dialog.
     $("#analyticsClose").addEventListener("click", () => {
       analyticsDialog.close();
     });
   }
 
-  
-  /* ==========================================
-     HABIT ACTIONS
-  ========================================== */
-
   async function toggleDay(id, day) {
-      // Prevent completing habits on future dates
-      if (day > todayStr()) {
-        const futureMessages = getFutureMessages();
-        
-        const message =
+    if (day > todayStr()) {
+      const futureMessages = getFutureMessages();
+
+      const message =
         futureMessages[
           futureMessageIndex % futureMessages.length
         ];
-        
+
       toast(message);
       futureMessageIndex++;
       return;
-}
+    }
+
     try {
       const response = await api(
         `/api/habits/${id}/toggle`,
@@ -883,7 +766,6 @@ function renderWeeklyChart(start, done, today) {
         state.habits[index] = response.habit;
       }
 
-      // Keep analytics data synchronized if the same habit is open.
       if (analyticsHabit && analyticsHabit.id === id) {
         analyticsHabit = response.habit;
       }
@@ -899,16 +781,10 @@ function renderWeeklyChart(start, done, today) {
           ? `Reinforced for ${day} ✓`
           : `Marked as not done for ${day}`
       );
-
     } catch (error) {
       toast(error.message, "err");
     }
   }
-
-
-  /* ==========================================
-     HABIT CREATE / EDIT DIALOG
-  ========================================== */
 
   const dlg = $("#habitDialog");
   const nameInput = $("#inName");
@@ -976,9 +852,6 @@ function renderWeeklyChart(start, done, today) {
     });
   }
 
-
-  /* ---------- Save habit ---------- */
-
   $("#habitForm").addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -1019,38 +892,28 @@ function renderWeeklyChart(start, done, today) {
         if (analyticsHabit && String(analyticsHabit.id) === id) {
           analyticsHabit = habit;
         }
-
       } else {
         state.habits.push(habit);
       }
 
       dlg.close();
-
       render();
 
       toast(
         id ? "Habit updated" : "Habit created "
       );
-
     } catch (error) {
       toast(error.message, "err");
     }
   });
 
-
   $("#btnCancel").addEventListener("click", () => {
     dlg.close();
   });
 
-
   customColor.addEventListener("input", () => {
     setColor(customColor.value.toLowerCase());
   });
-
-
-  /* ==========================================
-     DELETE CONFIRMATION
-  ========================================== */
 
   const cdlg = $("#confirmDialog");
 
@@ -1065,7 +928,6 @@ function renderWeeklyChart(start, done, today) {
 
     cdlg.showModal();
   }
-
 
   $("#btnYes").addEventListener("click", async () => {
     cdlg.close();
@@ -1093,26 +955,17 @@ function renderWeeklyChart(start, done, today) {
       }
 
       render();
-
       toast("Habit deleted");
-
     } catch (error) {
       toast(error.message, "err");
-
     } finally {
       deleteId = null;
     }
   });
 
-
   $("#btnNo").addEventListener("click", () => {
     cdlg.close();
   });
-
-
-  /* ==========================================
-     TOAST NOTIFICATIONS
-  ========================================== */
 
   function toast(message, kind) {
     const container = $("#toasts");
@@ -1137,11 +990,6 @@ function renderWeeklyChart(start, done, today) {
     }, 3050);
   }
 
-
-  /* ==========================================
-     INITIAL DATA LOADING
-  ========================================== */
-
   async function load() {
     const todayLabel = $("#todayLabel");
 
@@ -1164,67 +1012,64 @@ function renderWeeklyChart(start, done, today) {
       state.habits = Array.isArray(habits)
         ? habits
         : [];
-
     } catch (error) {
       toast(
         "Could not load habits: " + error.message,
         "err"
       );
-
     } finally {
       state.loading = false;
       render();
     }
   }
-  /* ==========================================
-   LANGUAGE SELECTOR
-========================================== */
 
-const languageSelect = $("#languageSelect");
+  const languageSelect = $("#languageSelect");
 
-if (languageSelect) {
-  languageSelect.value = currentLanguage;
+  if (languageSelect) {
+    languageSelect.value = currentLanguage;
 
-  languageSelect.addEventListener("change", () => {
-    currentLanguage = languageSelect.value;
+    languageSelect.addEventListener("change", () => {
+      currentLanguage = languageSelect.value;
 
-    render();
+      render();
 
-    if (analyticsDialog && analyticsDialog.open) {
-      renderHabitAnalytics();
-    }
+      if (analyticsDialog && analyticsDialog.open) {
+        renderHabitAnalytics();
+      }
 
-    const todayLabel = $("#todayLabel");
+      const todayLabel = $("#todayLabel");
 
-    if (todayLabel) {
-      todayLabel.textContent =
-        new Date().toLocaleDateString(
-          currentLanguage,
-          {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric"
-          }
-        );
-    }
-  });
-}
+      if (todayLabel) {
+        todayLabel.textContent =
+          new Date().toLocaleDateString(
+            currentLanguage,
+            {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric"
+            }
+          );
+      }
+    });
+  }
 
-  /* ==========================================
-     INITIALIZATION
-  ========================================== */
+  const addHabitButton = $("#addHabitBtn") || $("#btnAdd");
 
-  $("#btnAdd").addEventListener("click", () => {
-    openHabitDialog(null);
-  });
+  if (addHabitButton) {
+    addHabitButton.addEventListener("click", () => {
+      openHabitDialog(null);
+    });
+  }
 
-  $("#btnAddEmpty").addEventListener("click", () => {
-    openHabitDialog(null);
-  });
+  const emptyAddButton = $("#btnAddEmpty");
+
+  if (emptyAddButton) {
+    emptyAddButton.addEventListener("click", () => {
+      openHabitDialog(null);
+    });
+  }
 
   buildSwatches();
-
   load();
-
 })();
